@@ -1,8 +1,9 @@
 'use client'
 
-import { useActionState, useMemo, useState } from 'react'
+import { useActionState, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { signInAction } from '@/actions/auth'
+import { getDalatWeather } from '@/actions/weather'
 
 type AuthState = {
   success: boolean
@@ -83,6 +84,8 @@ export default function LoginPage() {
     initialState
   )
   const [showPassword, setShowPassword] = useState(false)
+  const [weather, setWeather] = useState<{ temperature: number | null; description: string } | null>(null)
+  const [routeMessage, setRouteMessage] = useState<string | null>(null)
 
   const bgStyle = useMemo(
     () => ({
@@ -91,6 +94,29 @@ export default function LoginPage() {
     }),
     []
   )
+
+  useEffect(() => {
+    let isMounted = true
+
+    const loadWeather = async () => {
+      const result = await getDalatWeather()
+
+      if (isMounted) {
+        setWeather(result)
+      }
+    }
+
+    void loadWeather()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    setRouteMessage(params.get('message'))
+  }, [])
 
   return (
     <main className="relative min-h-[calc(100vh-5rem)] overflow-hidden px-4 py-6 md:py-10">
@@ -113,9 +139,20 @@ export default function LoginPage() {
             </div>
             <div className="shrink-0 rounded-full border border-white/20 bg-white/15 px-3 py-2 text-right text-xs font-medium text-white shadow-lg backdrop-blur-xl">
               <p className="leading-none">Đà Lạt</p>
-              <p className="mt-1 text-base font-semibold">16°C</p>
+              <p className="mt-1 text-base font-semibold">
+                {weather?.temperature !== null ? `${weather?.temperature ?? '--'}°C` : '--'}
+              </p>
+              <p className="mt-1 max-w-[9rem] text-[11px] leading-4 text-white/75">
+                {weather?.description ?? 'Đang tải thời tiết...'}
+              </p>
             </div>
           </div>
+
+          {routeMessage ? (
+            <div className="mb-4 rounded-2xl border border-white/15 bg-white/15 px-4 py-3 text-sm font-semibold text-white shadow-sm backdrop-blur-xl">
+              {routeMessage}
+            </div>
+          ) : null}
 
           <div className="rounded-[1.75rem] border border-white/15 bg-pine-dark/20 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-5">
             <div className="mb-5">

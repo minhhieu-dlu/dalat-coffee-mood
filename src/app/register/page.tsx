@@ -1,8 +1,9 @@
 'use client'
 
-import { useActionState, useMemo, useState } from 'react'
+import { useActionState, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { signUpAction } from '@/actions/auth'
+import { getDalatWeather } from '@/actions/weather'
 
 type AuthState = {
   success: boolean
@@ -101,6 +102,7 @@ export default function RegisterPage() {
   )
   const [showPassword, setShowPassword] = useState(false)
   const [selectedVibes, setSelectedVibes] = useState<string[]>([])
+  const [weather, setWeather] = useState<{ temperature: number | null; description: string } | null>(null)
 
   const bgStyle = useMemo(
     () => ({
@@ -115,6 +117,24 @@ export default function RegisterPage() {
       current.includes(vibe) ? current.filter((item) => item !== vibe) : [...current, vibe]
     )
   }
+
+  useEffect(() => {
+    let isMounted = true
+
+    const loadWeather = async () => {
+      const result = await getDalatWeather()
+
+      if (isMounted) {
+        setWeather(result)
+      }
+    }
+
+    void loadWeather()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   return (
     <main className="relative min-h-[calc(100vh-5rem)] overflow-hidden px-4 py-6 md:py-10">
@@ -137,7 +157,12 @@ export default function RegisterPage() {
             </div>
             <div className="shrink-0 rounded-full border border-white/20 bg-white/15 px-3 py-2 text-right text-xs font-medium text-white shadow-lg backdrop-blur-xl">
               <p className="leading-none">Đà Lạt</p>
-              <p className="mt-1 text-base font-semibold">16°C</p>
+              <p className="mt-1 text-base font-semibold">
+                {weather?.temperature !== null ? `${weather?.temperature ?? '--'}°C` : '--'}
+              </p>
+              <p className="mt-1 max-w-[9rem] text-[11px] leading-4 text-white/75">
+                {weather?.description ?? 'Đang tải thời tiết...'}
+              </p>
             </div>
           </div>
 

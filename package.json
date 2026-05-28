@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "docker:standalone": "next build && docker compose build --no-cache app && docker compose up -d"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

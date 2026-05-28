@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 
 import { createClient } from '@/lib/supabase/server'
+import { getUserRole } from '@/lib/auth/role'
 
 export type AuthActionResult = {
   success: boolean
@@ -34,6 +35,7 @@ export async function signUpAction(formData: FormData): Promise<AuthActionResult
       options: {
         data: {
           name: name || undefined,
+          role: 'user',
         },
       },
     })
@@ -67,7 +69,7 @@ export async function signInAction(formData: FormData): Promise<AuthActionResult
       }
     }
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
@@ -79,7 +81,8 @@ export async function signInAction(formData: FormData): Promise<AuthActionResult
       }
     }
 
-    redirect('/')
+    const role = getUserRole(data.user)
+    redirect(role === 'admin' ? '/admin' : '/')
   } catch {
     return {
       success: false,
@@ -100,7 +103,7 @@ export async function signOutAction(): Promise<AuthActionResult | never> {
       }
     }
 
-    redirect('/login')
+    redirect('/')
   } catch {
     return {
       success: false,

@@ -1,3 +1,5 @@
+import { getDalatWeather } from '@/actions/weather'
+
 const systemServices = [
   { name: 'Weather API', status: 'Hoạt động', tone: 'bg-emerald-500' },
   { name: 'Spotify API', status: 'Hoạt động', tone: 'bg-emerald-500' },
@@ -9,7 +11,9 @@ const stats = [
   { label: 'Mood được tìm kiếm nhiều nhất', value: 'Sương mù buổi sáng', note: 'Xu hướng nổi bật hôm nay' },
 ] as const
 
-export default function AdminDashboardPage() {
+export default async function AdminDashboardPage() {
+  const weather = await getDalatWeather()
+
   return (
     <main className="space-y-6">
       <section className="rounded-[2rem] bg-white p-6 shadow-[0_20px_50px_rgba(10,47,29,0.08)] ring-1 ring-black/5">
@@ -19,6 +23,29 @@ export default function AdminDashboardPage() {
           <p className="text-sm text-slate-600">
             Giám sát dữ liệu, kiểm tra tín hiệu tích hợp và chạy thử luồng AI RAG cho hệ thống Dalat Mood.
           </p>
+        </div>
+      </section>
+
+      <section className="rounded-[2rem] bg-[linear-gradient(135deg,rgba(232,240,236,0.96),rgba(255,255,255,0.96))] p-6 shadow-[0_18px_40px_rgba(10,47,29,0.08)] ring-1 ring-white/70">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-600">Weather Snapshot</p>
+            <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">Thời tiết Đà Lạt</h2>
+            <p className="mt-2 text-sm text-slate-600">Dữ liệu thời tiết thực tế từ OpenWeatherMap, làm mới theo cache 30 phút.</p>
+          </div>
+          <div className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm ring-1 ring-pine-light">
+            {weather.temperature !== null ? `${weather.temperature}°C` : '--'}
+          </div>
+        </div>
+
+        <div className="mt-4 flex items-center gap-3 rounded-3xl bg-white px-4 py-4 shadow-sm ring-1 ring-black/5">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-pine-dark text-white shadow-sm">
+            ☁
+          </div>
+          <div>
+            <p className="text-base font-bold text-slate-900">{weather.description}</p>
+            <p className="text-sm text-slate-600">Đà Lạt, Việt Nam</p>
+          </div>
         </div>
       </section>
 

@@ -2,43 +2,9 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
+import { useEffect, useMemo, useState } from 'react'
 
-const conversation = [
-  {
-    role: 'ai',
-    type: 'text',
-    message:
-      'Chào buổi sáng! Trời Đà Lạt hôm nay đang mưa lất phất và khá lạnh (16°C). Bạn đang muốn tìm một không gian như thế nào để thư giãn?',
-  },
-  {
-    role: 'user',
-    type: 'text',
-    message: 'Mình muốn một nơi yên tĩnh, có view rừng thông và phù hợp để đọc sách.',
-  },
-  {
-    role: 'ai',
-    type: 'suggestion',
-    message: 'Mình gợi ý một nơi rất hợp vibe của bạn:',
-    shop: {
-      name: 'Cheo Veooo',
-      address: '7/20 Nguyễn Văn Cừ, Phường 1, Đà Lạt',
-      image:
-        'https://images.unsplash.com/photo-1505275350441-83dcda8eeef5?auto=format&fit=crop&w=400&q=80',
-      href: '/coffee-shops/cheo-veooo',
-    },
-  },
-  {
-    role: 'user',
-    type: 'text',
-    message: 'Nghe ổn đó, cho mình thêm một lựa chọn có không gian ấm hơn nhé.',
-  },
-  {
-    role: 'ai',
-    type: 'text',
-    message:
-      'Nếu bạn thích không gian ấm hơn, mình có thể lọc theo mood “Chill” hoặc “Vintage” để tìm thêm vài quán phù hợp ngay.',
-  },
-] as const
+import { getDalatWeather } from '@/actions/weather'
 
 function OnlineDot() {
   return <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_0_6px_rgba(74,222,128,0.12)]" />
@@ -67,16 +33,79 @@ function SendIcon() {
   )
 }
 
-function WeatherMini() {
+function WeatherMini({ weather }: { weather: { temperature: number | null; description: string } | null }) {
+  const temperature = weather?.temperature ?? null
+
   return (
     <div className="inline-flex items-center gap-2 rounded-full bg-white/12 px-3 py-2 text-xs font-semibold text-white backdrop-blur-md">
       <span className="h-2 w-2 rounded-full bg-sky-300" />
-      16°C
+      {temperature !== null ? `${temperature}°C` : '--'}
     </div>
   )
 }
 
 export default function MoodMatePage() {
+  const [weather, setWeather] = useState<{ temperature: number | null; description: string } | null>(null)
+
+  useEffect(() => {
+    let isMounted = true
+
+    const loadWeather = async () => {
+      const result = await getDalatWeather()
+
+      if (isMounted) {
+        setWeather(result)
+      }
+    }
+
+    void loadWeather()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const conversation = useMemo(
+    () => [
+      {
+        role: 'ai',
+        type: 'text',
+        message: weather
+          ? `Chào buổi sáng! Trời Đà Lạt hôm nay đang ${weather.description.toLowerCase()} và khá lạnh (${weather.temperature ?? '--'}°C). Bạn đang muốn tìm một không gian như thế nào để thư giãn?`
+          : 'Chào buổi sáng! Mình đang tải thời tiết Đà Lạt. Bạn đang muốn tìm một không gian như thế nào để thư giãn?',
+      },
+      {
+        role: 'user',
+        type: 'text',
+        message: 'Mình muốn một nơi yên tĩnh, có view rừng thông và phù hợp để đọc sách.',
+      },
+      {
+        role: 'ai',
+        type: 'suggestion',
+        message: 'Mình gợi ý một nơi rất hợp vibe của bạn:',
+        shop: {
+          name: 'Cheo Veooo',
+          address: '7/20 Nguyễn Văn Cừ, Phường 1, Đà Lạt',
+          image:
+            'https://images.unsplash.com/photo-1505275350441-83dcda8eeef5?auto=format&fit=crop&w=400&q=80',
+          href: '/coffee-shops/cheo-veooo',
+        },
+      },
+      {
+        role: 'user',
+        type: 'text',
+        message: 'Nghe ổn đó, cho mình thêm một lựa chọn có không gian ấm hơn nhé.',
+      },
+      {
+        role: 'ai',
+        type: 'text',
+        message:
+          'Nếu bạn thích không gian ấm hơn, mình có thể lọc theo mood “Chill” hoặc “Vintage” để tìm thêm vài quán phù hợp ngay.',
+      },
+    ],
+    [weather]
+  )
+
   return (
     <main className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-3xl flex-col px-4 py-4 sm:px-6 lg:px-8">
       <header className="sticky top-0 z-20 -mx-4 mb-4 border-b border-white/60 bg-cream-bg/90 px-4 py-3 backdrop-blur-xl sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
@@ -93,7 +122,7 @@ export default function MoodMatePage() {
             </div>
           </div>
 
-          <WeatherMini />
+          <WeatherMini weather={weather} />
         </div>
       </header>
 
@@ -121,30 +150,35 @@ export default function MoodMatePage() {
                 <p className="text-sm leading-6">{item.message}</p>
 
                 {isSuggestion && 'shop' in item ? (
-                  <div className="mt-4 overflow-hidden rounded-3xl bg-cream-bg ring-1 ring-pine-light/70">
-                    <div className="flex gap-3 p-3">
-                      <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl">
-                        <Image
-                          src={item.shop.image}
-                          alt={item.shop.name}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
+                  (() => {
+                    const shop = item.shop
 
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold text-slate-900">{item.shop.name}</p>
-                        <p className="mt-1 text-xs leading-5 text-slate-600">{item.shop.address}</p>
-                        <Link
-                          href={item.shop.href}
-                          className="mt-3 inline-flex items-center gap-2 rounded-full bg-pine-dark px-3 py-2 text-xs font-semibold text-white transition hover:bg-pine-dark/95"
-                        >
-                          Xem chi tiết
-                          <span className="text-base leading-none">→</span>
-                        </Link>
+                    if (!shop) {
+                      return null
+                    }
+
+                    return (
+                      <div className="mt-4 overflow-hidden rounded-3xl bg-cream-bg ring-1 ring-pine-light/70">
+                        <div className="flex gap-3 p-3">
+                          <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl">
+                            <Image src={shop.image} alt={shop.name} fill className="object-cover" />
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-bold text-slate-900">{shop.name}</p>
+                            <p className="mt-1 text-xs leading-5 text-slate-600">{shop.address}</p>
+                            <Link
+                              href={shop.href}
+                              className="mt-3 inline-flex items-center gap-2 rounded-full bg-pine-dark px-3 py-2 text-xs font-semibold text-white transition hover:bg-pine-dark/95"
+                            >
+                              Xem chi tiết
+                              <span className="text-base leading-none">→</span>
+                            </Link>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    )
+                  })()
                 ) : null}
               </div>
             </div>

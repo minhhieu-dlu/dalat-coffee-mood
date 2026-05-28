@@ -1,7 +1,9 @@
 'use client'
 
 import Image from 'next/image'
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
+
+import { getDalatWeather } from '@/actions/weather'
 
 const moodTags = ['Chill', 'Cổ điển - Vintage', 'Acoustic', 'Sân vườn']
 
@@ -75,11 +77,46 @@ function SearchIcon() {
 
 export default function Home() {
   const [selectedMood, setSelectedMood] = useState('Chill')
+  const [weather, setWeather] = useState<{ temperature: number | null; description: string } | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const weatherLabel = useMemo(() => 'Phù hợp thời tiết: 95%', [])
+  useEffect(() => {
+    let isMounted = true
+
+    const loadWeather = async () => {
+      const result = await getDalatWeather()
+
+      if (isMounted) {
+        setWeather(result)
+      }
+    }
+
+    void loadWeather()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    setErrorMessage(params.get('error'))
+  }, [])
+
+  const weatherTemperature = weather?.temperature ?? '--'
+  const weatherDescription = weather?.description ?? 'Đang tải thời tiết...'
+  const weatherLabel = weather?.temperature
+    ? `Phù hợp thời tiết: ${weather.temperature}°C`
+    : 'Phù hợp thời tiết: ...'
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 pb-6 pt-4 sm:px-6 lg:px-8">
+      {errorMessage ? (
+        <div className="rounded-3xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900 shadow-sm">
+          {errorMessage}
+        </div>
+      ) : null}
+
       <header className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
@@ -102,8 +139,8 @@ export default function Home() {
               <CloudIcon />
             </div>
             <div>
-              <p className="text-base font-bold text-slate-900">Đà Lạt - 18°C</p>
-              <p className="text-sm text-slate-600">Trời nhiều mây</p>
+              <p className="text-base font-bold text-slate-900">Đà Lạt - {weatherTemperature}°C</p>
+              <p className="text-sm text-slate-600">{weatherDescription}</p>
             </div>
           </div>
 
