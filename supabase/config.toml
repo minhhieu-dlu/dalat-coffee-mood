@@ -1,0 +1,5 @@
+# Supabase CLI configuration for Dalat Coffee Mood
+# Link this repo to a remote project with:
+#   supabase link --project-ref YOUR_PROJECT_REF
+
+project_id = "dalat-coffee-mood"

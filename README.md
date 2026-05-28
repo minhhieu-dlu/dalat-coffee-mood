@@ -20,6 +20,26 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Supabase Migration CLI
+
+This repo now includes a `supabase/` folder with migrations and a minimal CLI config.
+
+Typical workflow:
+
+```bash
+supabase login
+supabase link --project-ref YOUR_PROJECT_REF
+supabase db push
+```
+
+To create a new migration file:
+
+```bash
+supabase migration new add_some_feature
+```
+
+Migration files live in `supabase/migrations/` and are applied in order.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
