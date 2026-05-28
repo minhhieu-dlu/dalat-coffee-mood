@@ -22,8 +22,7 @@ export async function updateSession(request: NextRequest) {
           }>,
           headers: Record<string, string>
         ) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-
+          // Don't attempt to mutate the incoming request cookies on Edge.
           supabaseResponse = NextResponse.next({
             request,
           })
