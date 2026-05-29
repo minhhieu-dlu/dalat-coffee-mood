@@ -1,18 +1,67 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 
 import { createClient } from '@/lib/supabase/server'
-import { getUserRole } from '@/lib/auth/role'
+import { getUserRole, isAdminEmail } from '@/lib/auth/role'
 
 export type AuthActionResult = {
   success: boolean
   message: string
+  code?: string
+  redirectTo?: string
 }
 
 function getFormValue(formData: FormData, key: string) {
   const value = formData.get(key)
   return typeof value === 'string' ? value.trim() : ''
+}
+
+function normalizeAuthError(error: { code?: string; message?: string }) {
+  const code = (error.code ?? '').toLowerCase()
+  const message = (error.message ?? '').toLowerCase()
+
+  if (
+    code.includes('user_already_exists') ||
+    code.includes('email_exists') ||
+    message.includes('already') ||
+    message.includes('registered')
+  ) {
+    return {
+      code: 'user_exists',
+      message: 'Tài khoản đã tồn tại',
+    }
+  }
+
+  if (
+    code.includes('invalid_login') ||
+    code.includes('invalid_credentials') ||
+    message.includes('invalid login credentials') ||
+    message.includes('invalid credentials')
+  ) {
+    return {
+      code: 'invalid_login',
+      message: 'Sai thông tin đăng nhập',
+    }
+  }
+
+  return {
+    code: error.code ?? 'auth_error',
+    message: error.message ?? 'Không thể xử lý yêu cầu xác thực lúc này.',
+  }
+}
+
+async function getRedirectTarget(defaultTarget: string) {
+  const cookieStore = await cookies()
+  const savedTarget = cookieStore.get('redirectTo')?.value
+
+  if (savedTarget) {
+    cookieStore.delete('redirectTo')
+    return savedTarget
+  }
+
+  return defaultTarget
 }
 
 export async function signUpAction(formData: FormData): Promise<AuthActionResult | never> {
@@ -21,6 +70,7 @@ export async function signUpAction(formData: FormData): Promise<AuthActionResult
     const email = getFormValue(formData, 'email')
     const password = getFormValue(formData, 'password')
     const name = getFormValue(formData, 'name')
+    const role = isAdminEmail(email) ? 'admin' : 'user'
 
     if (!email || !password) {
       return {
@@ -35,22 +85,33 @@ export async function signUpAction(formData: FormData): Promise<AuthActionResult
       options: {
         data: {
           name: name || undefined,
-          role: 'user',
+          role,
         },
       },
     })
 
     if (error) {
+      const normalizedError = normalizeAuthError(error)
+
       return {
         success: false,
-        message: error.message,
+        code: normalizedError.code,
+        message: normalizedError.message,
       }
     }
 
-    redirect('/login?message=Check email to continue')
+    const redirectTo = await getRedirectTarget('/login')
+
+    return {
+      success: true,
+      code: 'register_success',
+      message: 'Đăng ký thành công',
+      redirectTo,
+    }
   } catch {
     return {
       success: false,
+      code: 'auth_error',
       message: 'Không thể đăng ký tài khoản lúc này. Vui lòng thử lại sau.',
     }
   }
@@ -75,17 +136,50 @@ export async function signInAction(formData: FormData): Promise<AuthActionResult
     })
 
     if (error) {
+      const normalizedError = normalizeAuthError(error)
+
       return {
         success: false,
-        message: error.message,
+        code: normalizedError.code,
+        message: normalizedError.message,
       }
     }
 
     const role = getUserRole(data.user)
-    redirect(role === 'admin' ? '/admin' : '/')
+    const profileName =
+      (data.user.user_metadata as Record<string, unknown> | null | undefined)?.name?.toString() ??
+      data.user.email?.split('@')[0] ??
+      'Người dùng'
+
+    const { error: profileError } = await supabase.from('profiles').upsert(
+      {
+        id: data.user.id,
+        name: profileName,
+        role,
+      },
+      {
+        onConflict: 'id',
+      }
+    )
+
+    if (!profileError) {
+      await supabase.auth.updateUser({
+        data: {
+          role,
+        },
+      })
+    }
+
+    return {
+      success: true,
+      code: 'login_success',
+      message: 'Đăng nhập thành công',
+      redirectTo: await getRedirectTarget(role === 'admin' ? '/admin' : '/'),
+    }
   } catch {
     return {
       success: false,
+      code: 'auth_error',
       message: 'Không thể đăng nhập lúc này. Vui lòng thử lại sau.',
     }
   }

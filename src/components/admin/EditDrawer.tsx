@@ -13,6 +13,8 @@ type EditDrawerProps = {
     name?: string
     address?: string
     description?: string
+    latitude?: number | null
+    longitude?: number | null
     vibeTags?: string[]
   }
 }
@@ -28,6 +30,8 @@ export default function EditDrawer({ open, onClose, mode, initialData }: EditDra
       name: initialData?.name ?? '',
       address: initialData?.address ?? '',
       description: initialData?.description ?? '',
+      latitude: initialData?.latitude ?? '',
+      longitude: initialData?.longitude ?? '',
     }),
     [initialData]
   )
@@ -105,6 +109,32 @@ export default function EditDrawer({ open, onClose, mode, initialData }: EditDra
                   defaultValue={defaultValues.address}
                   className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-pine-dark"
                   placeholder="Nhập địa chỉ quán"
+                />
+              </label>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="space-y-2 text-sm font-semibold text-slate-800">
+                <span>Latitude</span>
+                <input
+                  name="latitude"
+                  type="number"
+                  step="any"
+                  defaultValue={defaultValues.latitude}
+                  className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-pine-dark"
+                  placeholder="Ví dụ: 11.9404"
+                />
+              </label>
+
+              <label className="space-y-2 text-sm font-semibold text-slate-800">
+                <span>Longitude</span>
+                <input
+                  name="longitude"
+                  type="number"
+                  step="any"
+                  defaultValue={defaultValues.longitude}
+                  className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-pine-dark"
+                  placeholder="Ví dụ: 108.4583"
                 />
               </label>
             </div>

@@ -1,21 +1,20 @@
 import type { NextConfig } from "next";
 
-// Detect Vercel environment so we can avoid `output: 'standalone'` there.
-const isVercel = !!process.env.VERCEL;
+const isVercel = Boolean(process.env.VERCEL);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseHostname = supabaseUrl ? new URL(supabaseUrl).hostname : '**.supabase.co';
 
 const nextConfig: NextConfig = {
   images: {
-    // Allow Supabase storage images (generic pattern for *.supabase.co)
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**.supabase.co',
+        hostname: supabaseHostname,
         port: '',
         pathname: '/**',
       },
     ],
   },
-  // Keep `output: 'standalone'` for local/Docker builds, but omit on Vercel.
   ...(isVercel ? {} : { output: 'standalone' }),
 };
 

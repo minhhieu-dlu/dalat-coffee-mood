@@ -73,6 +73,8 @@ create table if not exists public.coffee_shops (
   name text not null,
   description text,
   address text,
+  latitude double precision,
+  longitude double precision,
   ai_mood_tags text[] not null default '{}',
   image_url text,
   created_by uuid not null references auth.users(id) on delete cascade,

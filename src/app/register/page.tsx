@@ -1,13 +1,19 @@
 'use client'
 
-import { useActionState, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useActionState, useEffect, useMemo, useState } from 'react'
+import toast from 'react-hot-toast'
+
 import { signUpAction } from '@/actions/auth'
 import { getDalatWeather } from '@/actions/weather'
+import { createClient } from '@/lib/supabase/client'
 
 type AuthState = {
   success: boolean
   message: string
+  code?: string
+  redirectTo?: string
 }
 
 const initialState: AuthState = {
@@ -96,6 +102,7 @@ function FacebookIcon() {
 }
 
 export default function RegisterPage() {
+  const router = useRouter()
   const [state, formAction] = useActionState(
     async (_previousState: AuthState, formData: FormData) => signUpAction(formData),
     initialState
@@ -103,6 +110,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [selectedVibes, setSelectedVibes] = useState<string[]>([])
   const [weather, setWeather] = useState<{ temperature: number | null; description: string } | null>(null)
+  const [oauthLoading, setOauthLoading] = useState<'google' | 'facebook' | null>(null)
 
   const bgStyle = useMemo(
     () => ({
@@ -136,6 +144,40 @@ export default function RegisterPage() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!state.message) {
+      return
+    }
+
+    if (state.success) {
+      toast.success(state.message)
+      router.replace(state.redirectTo ?? '/login')
+      return
+    }
+
+    toast.error(state.message)
+  }, [router, state.message, state.redirectTo, state.success])
+
+  const handleOAuthLogin = async (provider: 'google' | 'facebook') => {
+    try {
+      setOauthLoading(provider)
+
+      const supabase = createClient()
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${location.origin}/auth/callback?next=/`,
+        },
+      })
+
+      if (error) {
+        toast.error(error.message)
+      }
+    } finally {
+      setOauthLoading(null)
+    }
+  }
+
   return (
     <main className="relative min-h-[calc(100vh-5rem)] overflow-hidden px-4 py-6 md:py-10">
       <div className="absolute inset-0">
@@ -160,7 +202,7 @@ export default function RegisterPage() {
               <p className="mt-1 text-base font-semibold">
                 {weather?.temperature !== null ? `${weather?.temperature ?? '--'}°C` : '--'}
               </p>
-              <p className="mt-1 max-w-[9rem] text-[11px] leading-4 text-white/75">
+              <p className="mt-1 max-w-36 text-[11px] leading-4 text-white/75">
                 {weather?.description ?? 'Đang tải thời tiết...'}
               </p>
             </div>
@@ -283,17 +325,21 @@ export default function RegisterPage() {
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
+                onClick={() => void handleOAuthLogin('google')}
+                disabled={oauthLoading !== null}
                 className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/92 text-sm font-semibold text-pine-dark shadow-sm transition hover:-translate-y-0.5 hover:bg-white"
               >
                 <GoogleIcon />
-                Google
+                {oauthLoading === 'google' ? 'Đang chuyển...' : 'Đăng nhập bằng Google'}
               </button>
               <button
                 type="button"
+                onClick={() => void handleOAuthLogin('facebook')}
+                disabled={oauthLoading !== null}
                 className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/92 text-sm font-semibold text-pine-dark shadow-sm transition hover:-translate-y-0.5 hover:bg-white"
               >
                 <FacebookIcon />
-                Facebook
+                {oauthLoading === 'facebook' ? 'Đang chuyển...' : 'Đăng nhập bằng Facebook'}
               </button>
             </div>
 

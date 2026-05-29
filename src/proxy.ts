@@ -19,6 +19,18 @@ function createLoginUrl(request: NextRequest, message: string) {
 	return url
 }
 
+function setRedirectCookie(response: NextResponse, request: NextRequest) {
+	response.cookies.set('redirectTo', `${request.nextUrl.pathname}${request.nextUrl.search}`, {
+		path: '/',
+		httpOnly: true,
+		sameSite: 'lax',
+		secure: process.env.NODE_ENV === 'production',
+		maxAge: 60 * 60 * 24,
+	})
+
+	return response
+}
+
 export async function proxy(request: NextRequest) {
 	let response = NextResponse.next({ request })
 
@@ -74,7 +86,11 @@ export async function proxy(request: NextRequest) {
 	}
 
 	if (isProtectedFeatureRoute && !user) {
-		return NextResponse.redirect(createLoginUrl(request, 'Vui lòng đăng nhập để dùng tính năng này.'))
+		const loginResponse = NextResponse.redirect(
+			createLoginUrl(request, 'Vui lòng đăng nhập để dùng tính năng này.')
+		)
+
+		return setRedirectCookie(loginResponse, request)
 	}
 
 	return response

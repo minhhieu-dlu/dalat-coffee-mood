@@ -97,7 +97,7 @@ export default function AdminShell({ children }: AdminShellProps) {
                       key={item.href}
                       href={item.href}
                       className={[
-                        'group flex min-w-[15rem] items-center justify-between rounded-3xl px-4 py-4 text-left transition-all duration-200 lg:min-w-0',
+                        'group flex min-w-60 items-center justify-between rounded-3xl px-4 py-4 text-left transition-all duration-200 lg:min-w-0',
                         active
                           ? 'bg-pine-dark text-white shadow-[0_16px_30px_rgba(10,47,29,0.18)]'
                           : darkMode

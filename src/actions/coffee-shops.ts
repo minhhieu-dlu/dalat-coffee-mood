@@ -8,6 +8,8 @@ export type CoffeeShopInput = {
   name: string
   description?: string
   address?: string
+  latitude?: number | null
+  longitude?: number | null
   ai_mood_tags?: string[]
 }
 
@@ -21,6 +23,8 @@ export type CoffeeShopRow = {
   name: string
   description: string | null
   address: string | null
+  latitude: number | null
+  longitude: number | null
   ai_mood_tags: string[]
   image_url: string | null
   created_by: string
@@ -46,6 +50,18 @@ function parseTagsFromFormData(formData: FormData) {
 function getFormValue(formData: FormData, key: string) {
   const value = formData.get(key)
   return typeof value === 'string' ? value.trim() : ''
+}
+
+function getFormNumber(formData: FormData, key: string) {
+  const value = getFormValue(formData, key)
+
+  if (!value) {
+    return null
+  }
+
+  const parsed = Number(value)
+
+  return Number.isFinite(parsed) ? parsed : null
 }
 
 function getFormFile(formData: FormData, key: string) {
@@ -93,7 +109,7 @@ export async function getCoffeeShops(): Promise<CoffeeShopRow[]> {
 
   const { data, error } = await supabase
     .from('coffee_shops')
-    .select('id, name, description, address, ai_mood_tags, image_url, created_by')
+    .select('id, name, description, address, latitude, longitude, ai_mood_tags, image_url, created_by')
     .order('id', { ascending: false })
 
   if (error) {
@@ -150,6 +166,8 @@ export async function createCoffeeShop(
       name,
       description: normalizeText(data.description) || null,
       address: normalizeText(data.address) || null,
+      latitude: typeof data.latitude === 'number' ? data.latitude : null,
+      longitude: typeof data.longitude === 'number' ? data.longitude : null,
       ai_mood_tags: normalizeTags(data.ai_mood_tags),
       image_url: imageUrl,
       created_by: user.id,
@@ -254,6 +272,8 @@ export async function createCoffeeShopAction(formData: FormData): Promise<Coffee
       name: getFormValue(formData, 'name'),
       description: getFormValue(formData, 'description'),
       address: getFormValue(formData, 'address'),
+      latitude: getFormNumber(formData, 'latitude'),
+      longitude: getFormNumber(formData, 'longitude'),
       ai_mood_tags: parseTagsFromFormData(formData),
     },
     getFormFile(formData, 'image')
@@ -321,6 +341,8 @@ export async function updateCoffeeShop(
         name: normalizeText(data.name),
         description: normalizeText(data.description) || null,
         address: normalizeText(data.address) || null,
+        latitude: typeof data.latitude === 'number' ? data.latitude : null,
+        longitude: typeof data.longitude === 'number' ? data.longitude : null,
         ai_mood_tags: normalizeTags(data.ai_mood_tags),
         image_url: imageUrl,
       })
@@ -377,6 +399,8 @@ export async function updateCoffeeShopAction(formData: FormData): Promise<Coffee
       name: getFormValue(formData, 'name'),
       description: getFormValue(formData, 'description'),
       address: getFormValue(formData, 'address'),
+      latitude: getFormNumber(formData, 'latitude'),
+      longitude: getFormNumber(formData, 'longitude'),
       ai_mood_tags: parseTagsFromFormData(formData),
     },
     getFormFile(formData, 'image')

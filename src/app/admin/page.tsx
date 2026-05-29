@@ -16,7 +16,7 @@ export default async function AdminDashboardPage() {
 
   return (
     <main className="space-y-6">
-      <section className="rounded-[2rem] bg-white p-6 shadow-[0_20px_50px_rgba(10,47,29,0.08)] ring-1 ring-black/5">
+      <section className="rounded-4xl bg-white p-6 shadow-[0_20px_50px_rgba(10,47,29,0.08)] ring-1 ring-black/5">
         <div className="flex flex-col gap-2">
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Admin Dashboard</p>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Tổng quan hệ thống</h1>
@@ -26,7 +26,7 @@ export default async function AdminDashboardPage() {
         </div>
       </section>
 
-      <section className="rounded-[2rem] bg-[linear-gradient(135deg,rgba(232,240,236,0.96),rgba(255,255,255,0.96))] p-6 shadow-[0_18px_40px_rgba(10,47,29,0.08)] ring-1 ring-white/70">
+      <section className="rounded-4xl bg-[linear-gradient(135deg,rgba(232,240,236,0.96),rgba(255,255,255,0.96))] p-6 shadow-[0_18px_40px_rgba(10,47,29,0.08)] ring-1 ring-white/70">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-600">Weather Snapshot</p>
@@ -53,7 +53,7 @@ export default async function AdminDashboardPage() {
         {stats.map((item) => (
           <article
             key={item.label}
-            className="rounded-[2rem] bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(232,240,236,0.95))] p-6 shadow-[0_18px_40px_rgba(10,47,29,0.08)] ring-1 ring-white/70"
+            className="rounded-4xl bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(232,240,236,0.95))] p-6 shadow-[0_18px_40px_rgba(10,47,29,0.08)] ring-1 ring-white/70"
           >
             <p className="text-sm font-semibold text-slate-600">{item.label}</p>
             <p className="mt-3 text-4xl font-bold tracking-tight text-slate-900">{item.value}</p>
@@ -63,7 +63,7 @@ export default async function AdminDashboardPage() {
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <article className="rounded-[2rem] bg-white p-6 shadow-[0_18px_40px_rgba(10,47,29,0.08)] ring-1 ring-black/5">
+        <article className="rounded-4xl bg-white p-6 shadow-[0_18px_40px_rgba(10,47,29,0.08)] ring-1 ring-black/5">
           <div className="flex items-center justify-between gap-3">
             <div>
               <h2 className="text-xl font-bold tracking-tight text-slate-900">Giám sát hệ thống</h2>
@@ -90,7 +90,7 @@ export default async function AdminDashboardPage() {
           </div>
         </article>
 
-        <article className="rounded-[2rem] bg-pine-dark p-6 text-white shadow-[0_18px_40px_rgba(10,47,29,0.16)]">
+        <article className="rounded-4xl bg-pine-dark p-6 text-white shadow-[0_18px_40px_rgba(10,47,29,0.16)]">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/65">RAG Playground</p>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight">Trải nghiệm AI RAG</h2>
           <p className="mt-2 text-sm leading-6 text-white/75">

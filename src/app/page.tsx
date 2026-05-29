@@ -1,36 +1,57 @@
 'use client'
 
+import Link from 'next/link'
 import Image from 'next/image'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { getDalatWeather } from '@/actions/weather'
 
-const moodTags = ['Chill', 'Cổ điển - Vintage', 'Acoustic', 'Sân vườn']
+type ShopMood = 'Chill' | 'Cổ điển - Vintage' | 'Acoustic' | 'Sân vườn'
+type MoodFilter = ShopMood | 'Tất cả'
 
-const coffeeShops = [
+type CoffeeShop = {
+  id: string
+  name: string
+  address: string
+  rating: number
+  compatibility: number
+  moods: readonly ShopMood[]
+  tags: readonly string[]
+  image: string
+}
+
+const moodTags = ['Tất cả', 'Chill', 'Cổ điển - Vintage', 'Acoustic', 'Sân vườn'] as const satisfies readonly MoodFilter[]
+
+const coffeeShops: readonly CoffeeShop[] = [
   {
+    id: 'cheo-veooo',
     name: 'Cheo Veooo',
     address: '7/20 Nguyễn Văn Cừ, Phường 1, Đà Lạt',
     rating: 4.8,
     compatibility: 95,
+    moods: ['Chill', 'Acoustic'],
     tags: ['Ngắm rừng thông', 'Yên tĩnh'],
     image:
       'url(https://images.unsplash.com/photo-1505275350441-83dcda8eeef5?auto=format&fit=crop&w=1200&q=80)',
   },
   {
+    id: 'tui-mo-to',
     name: 'Tiệm Cà Phê Túi Mơ To',
     address: '31 Đặng Thái Thân, Phường 3, Đà Lạt',
     rating: 4.7,
     compatibility: 92,
+    moods: ['Sân vườn', 'Chill'],
     tags: ['Sân vườn', 'Ánh sáng đẹp'],
     image:
       'url(https://images.unsplash.com/photo-1445116572660-236099ec97a0?auto=format&fit=crop&w=1200&q=80)',
   },
   {
+    id: 'hoang-hon',
     name: 'Tiệm Cà Phê Hoàng Hôn',
     address: 'Khu vực Trại Mát, Đà Lạt',
     rating: 4.9,
     compatibility: 89,
+    moods: ['Cổ điển - Vintage', 'Acoustic'],
     tags: ['Cổ điển - Vintage', 'Ngắm mây'],
     image:
       'url(https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80)',
@@ -76,7 +97,7 @@ function SearchIcon() {
 }
 
 export default function Home() {
-  const [selectedMood, setSelectedMood] = useState('Chill')
+  const [selectedMood, setSelectedMood] = useState<MoodFilter>('Chill')
   const [weather, setWeather] = useState<{ temperature: number | null; description: string } | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
@@ -108,6 +129,20 @@ export default function Home() {
   const weatherLabel = weather?.temperature
     ? `Phù hợp thời tiết: ${weather.temperature}°C`
     : 'Phù hợp thời tiết: ...'
+  const sortedCoffeeShops = useMemo(() => {
+    if (selectedMood === 'Tất cả') {
+      return coffeeShops
+    }
+
+    const activeMood = selectedMood as ShopMood
+
+    return [...coffeeShops].sort((first, second) => {
+      const firstScore = first.moods.includes(activeMood) ? 1 : 0
+      const secondScore = second.moods.includes(activeMood) ? 1 : 0
+
+      return secondScore - firstScore
+    })
+  }, [selectedMood])
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 pb-6 pt-4 sm:px-6 lg:px-8">
@@ -196,10 +231,11 @@ export default function Home() {
         </div>
 
         <div className="space-y-4">
-          {coffeeShops.map((shop) => (
-            <article
+          {sortedCoffeeShops.map((shop) => (
+            <Link
               key={shop.name}
-              className="group relative min-h-88 overflow-hidden rounded-4xl bg-cover bg-center shadow-[0_24px_60px_rgba(10,47,29,0.16)] ring-1 ring-black/5"
+              href={`/shops/${shop.id}`}
+              className="group relative min-h-88 overflow-hidden rounded-4xl bg-cover bg-center shadow-[0_24px_60px_rgba(10,47,29,0.16)] ring-1 ring-black/5 transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(10,47,29,0.2)]"
               style={{ backgroundImage: shop.image }}
             >
               <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,47,29,0.12),rgba(10,47,29,0.38)_70%,rgba(10,47,29,0.82))]" />
@@ -227,7 +263,7 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-            </article>
+            </Link>
           ))}
         </div>
       </section>
