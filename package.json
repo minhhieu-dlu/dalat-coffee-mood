@@ -7,6 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "playwright:install": "npx playwright install --with-deps",
+    "test:e2e": "npx playwright test",
+    "test:e2e:ci": "npx playwright test --reporter=dot",
     "seed:shops": "node scripts/seed_shops.js",
     "seed:users": "node scripts/create_users.js",
     "docker:standalone": "next build && docker compose build --no-cache app && docker compose up -d"
@@ -34,6 +37,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "@playwright/test": "^1.42.0"
   }
 }
