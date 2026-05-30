@@ -78,8 +78,8 @@ export default function AdminShell({ children }: AdminShellProps) {
     <div className={`min-h-screen ${themeClasses}`}>
       <div className="flex min-h-screen flex-col lg:flex-row">
         <aside className={darkMode ? 'border-slate-800 bg-slate-900/95' : 'border-white/70 bg-white/90'}>
-          <div className="flex items-center gap-3 border-b border-black/5 px-5 py-5 lg:h-screen lg:w-80 lg:flex-col lg:items-stretch lg:justify-between lg:border-b-0 lg:border-r">
-            <div className="space-y-6 lg:w-full">
+          <div className="flex flex-col gap-4 border-b border-black/5 px-4 py-4 lg:h-screen lg:w-80 lg:items-stretch lg:justify-between lg:border-b-0 lg:border-r lg:px-5 lg:py-5">
+            <div className="flex items-center gap-3 lg:w-full lg:flex-col lg:items-stretch lg:gap-6">
               <div className="flex items-center gap-3">
                 <LogoMark />
                 <div>
@@ -97,7 +97,7 @@ export default function AdminShell({ children }: AdminShellProps) {
                       key={item.href}
                       href={item.href}
                       className={[
-                        'group flex min-w-60 items-center justify-between rounded-3xl px-4 py-4 text-left transition-all duration-200 lg:min-w-0',
+                        'group flex min-w-48 items-center justify-between rounded-3xl px-4 py-4 text-left transition-all duration-200 sm:min-w-56 lg:min-w-0',
                         active
                           ? 'bg-pine-dark text-white shadow-[0_16px_30px_rgba(10,47,29,0.18)]'
                           : darkMode
@@ -154,7 +154,7 @@ export default function AdminShell({ children }: AdminShellProps) {
         </aside>
 
         <div className="flex-1">
-          <div className="mx-auto max-w-7xl px-4 py-5 lg:px-8 lg:py-8">{children}</div>
+          <div className="mx-auto max-w-7xl px-4 py-4 sm:px-5 sm:py-5 lg:px-8 lg:py-8">{children}</div>
         </div>
       </div>
     </div>

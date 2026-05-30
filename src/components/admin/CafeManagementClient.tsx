@@ -80,6 +80,44 @@ export default function CafeManagementClient({ initialCoffeeShops }: CafeManagem
         </div>
       </section>
 
+      <section className="rounded-4xl bg-white p-6 shadow-[0_20px_50px_rgba(10,47,29,0.08)] ring-1 ring-black/5">
+        <h3 className="text-sm font-semibold text-slate-800">Import CSV (bulk)</h3>
+        <p className="mt-1 text-sm text-slate-600">Tải file CSV chứa các trường: name,address,description,latitude,longitude,ai_mood_tags,image_url. Dùng '|' để phân tách nhiều tags.</p>
+
+        <form
+          action="/admin/cafe-management/import"
+          method="post"
+          encType="multipart/form-data"
+          className="mt-4 flex items-center gap-3"
+        >
+          <input name="file" type="file" accept=".csv" />
+          <button
+            type="submit"
+            className="rounded-2xl bg-pine-dark px-4 py-2 text-sm font-semibold text-white"
+          >
+            Import
+          </button>
+
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault()
+              const sample = 'name,address,description,latitude,longitude,ai_mood_tags,image_url\nCheo Veooo,7/20 Ng Van Cu,View rừng thông,11.9412,108.4488,Chill|Acoustic,https://example.com/image.jpg'
+              const blob = new Blob([sample], { type: 'text/csv' })
+              const url = URL.createObjectURL(blob)
+              const a = document.createElement('a')
+              a.href = url
+              a.download = 'sample_shops.csv'
+              a.click()
+              URL.revokeObjectURL(url)
+            }}
+            className="ml-3 text-sm text-pine-dark underline"
+          >
+            Tải mẫu CSV
+          </a>
+        </form>
+      </section>
+
       <section className="overflow-hidden rounded-4xl bg-white shadow-[0_20px_50px_rgba(10,47,29,0.08)] ring-1 ring-black/5">
         <div className="overflow-x-auto">
           <table className="min-w-full border-separate border-spacing-0">

@@ -1,0 +1,45 @@
+{
+  "success": false,
+  "summary": {
+    "allSignupSuccess": false,
+    "allProfilesCreated": false,
+    "allSigninSuccess": false,
+    "totalProfiles": 1
+  },
+  "results": [
+    {
+      "email": "user1-1780106023551@test.com",
+      "signup": false,
+      "profile": false,
+      "signin": false,
+      "error": "Database error saving new user"
+    },
+    {
+      "email": "user2-1780106023551@test.com",
+      "signup": false,
+      "profile": false,
+      "signin": false,
+      "error": "Database error saving new user"
+    },
+    {
+      "email": "user3-1780106023551@test.com",
+      "signup": false,
+      "profile": false,
+      "signin": false,
+      "error": "Database error saving new user"
+    }
+  ],
+  "logs": [
+    "[START] === BẮT ĐẦU TEST MULTI-USER SIGNUP ===",
+    "[TEST] User 1: Signup...",
+    "[ERROR]   ❌ Signup failed: Database error saving new user",
+    "[TEST] User 2: Signup...",
+    "[ERROR]   ❌ Signup failed: Database error saving new user",
+    "[TEST] User 3: Signup...",
+    "[ERROR]   ❌ Signup failed: Database error saving new user",
+    "[TEST] Checking total profiles...",
+    "[SUCCESS] ✓ Total profiles: 1",
+    "[END] === KẾT THÚC TEST ===",
+    "[ERROR] ❌ SOME TESTS FAILED"
+  ]
+}

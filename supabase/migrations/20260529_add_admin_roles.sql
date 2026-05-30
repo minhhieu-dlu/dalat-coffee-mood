@@ -19,14 +19,21 @@ set search_path = public, auth
 as $$
 declare
   normalized_email text := lower(coalesce(new.email, ''));
+  existing_role text := 'user';
   assigned_role text := case
-    when normalized_email in ('admin@gmail.com', 'quantri@gmail.com') then 'admin'
-    else coalesce(new.raw_user_meta_data->>'role', 'user')
+    when tg_op = 'INSERT' and normalized_email in ('admin@gmail.com', 'quantri@gmail.com') then 'admin'
+    else coalesce(new.raw_user_meta_data->>'role', existing_role, 'user')
   end;
   profile_name text := nullif(btrim(coalesce(new.raw_user_meta_data->>'name', split_part(coalesce(new.email, ''), '@', 1))), '');
 begin
   if profile_name is null then
     profile_name := 'Người dùng';
+  end if;
+
+  if tg_op = 'UPDATE' then
+    existing_role := coalesce(old.raw_user_meta_data->>'role', old.raw_app_meta_data->>'role', 'user');
+
+    assigned_role := coalesce(new.raw_user_meta_data->>'role', existing_role, 'user');
   end if;
 
   new.raw_user_meta_data := coalesce(new.raw_user_meta_data, '{}'::jsonb) || jsonb_build_object('role', assigned_role);

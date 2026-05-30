@@ -1,8 +1,16 @@
 import type { NextConfig } from "next";
 
-const isVercel = Boolean(process.env.VERCEL);
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseHostname = supabaseUrl ? new URL(supabaseUrl).hostname : '**.supabase.co';
+
+function getSupabaseHostname() {
+  try {
+    return supabaseUrl ? new URL(supabaseUrl).hostname : '**.supabase.co'
+  } catch {
+    return '**.supabase.co'
+  }
+}
+
+const supabaseHostname = getSupabaseHostname();
 
 const nextConfig: NextConfig = {
   images: {
@@ -11,11 +19,11 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: supabaseHostname,
         port: '',
-        pathname: '/**',
+        pathname: '/storage/v1/object/public/**',
       },
     ],
   },
-  ...(isVercel ? {} : { output: 'standalone' }),
+  output: 'standalone',
 };
 
 export default nextConfig;

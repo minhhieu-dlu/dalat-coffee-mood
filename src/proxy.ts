@@ -73,7 +73,8 @@ export async function proxy(request: NextRequest) {
 
 	const pathname = request.nextUrl.pathname
 	const isAdminRoute = pathname.startsWith('/admin')
-	const isProtectedFeatureRoute = pathname === '/mood-mate' || pathname.startsWith('/shops/')
+	// `shops` pages are public read-only detail pages; only `mood-mate` requires auth.
+	const isProtectedFeatureRoute = pathname === '/mood-mate'
 
 	if (isAdminRoute) {
 		if (!user) {

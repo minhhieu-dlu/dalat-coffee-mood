@@ -7,11 +7,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "seed:shops": "node scripts/seed_shops.js",
+    "seed:users": "node scripts/create_users.js",
     "docker:standalone": "next build && docker compose build --no-cache app && docker compose up -d"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.80",
     "@ai-sdk/react": "^3.0.195",
+    "@google/generative-ai": "^0.24.1",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.2",
     "@types/leaflet": "^1.9.21",

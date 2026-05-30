@@ -79,7 +79,7 @@ export async function signUpAction(formData: FormData): Promise<AuthActionResult
       }
     }
 
-    const { error } = await supabase.auth.signUp({
+    const { data: signUpData, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -91,12 +91,33 @@ export async function signUpAction(formData: FormData): Promise<AuthActionResult
     })
 
     if (error) {
+      console.error('signUp error raw:', error)
       const normalizedError = normalizeAuthError(error)
 
       return {
         success: false,
         code: normalizedError.code,
         message: normalizedError.message,
+      }
+    }
+
+    // Tạo profile ngay lập tức (không chỉ phụ thuộc trigger)
+    if (signUpData.user) {
+      const profileName = name || email.split('@')[0] || 'Người dùng'
+      const { error: profileError } = await supabase.from('profiles').upsert(
+        {
+          id: signUpData.user.id,
+          name: profileName,
+          role,
+        },
+        {
+          onConflict: 'id',
+        }
+      )
+
+      if (profileError) {
+        console.error('Profile creation error:', profileError)
+        // Log error nhưng không fail signup
       }
     }
 

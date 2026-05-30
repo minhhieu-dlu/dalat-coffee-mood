@@ -40,6 +40,43 @@ supabase migration new add_some_feature
 
 Migration files live in `supabase/migrations/` and are applied in order.
 
+## Seeding and Bulk User Creation
+
+To seed demo coffee shops and create test users you can use the included scripts. These scripts require the Supabase service role key and URL in your environment variables. Do NOT commit the service role key.
+
+1. Set environment variables (example on Windows PowerShell):
+
+```powershell
+$env:SUPABASE_URL = "https://your-project.supabase.co"
+$env:SUPABASE_SERVICE_ROLE_KEY = "your-service-role-key"
+```
+
+2. Seed shops:
+
+```bash
+npm run seed:shops
+```
+
+3. Create N test users (example 20):
+
+```bash
+npm run seed:users -- 20
+```
+
+The `create_users.js` script uses the Supabase Admin API to create users and will mark their emails as confirmed.
+
+## Docker Local Run
+
+This project already uses `output: 'standalone'` in `next.config.ts` for non-Vercel builds, which is compatible with the Docker runner stage.
+
+Run with Docker Compose:
+
+```bash
+docker compose --env-file .env.local up --build
+```
+
+The app will be available at `http://localhost:3000`.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

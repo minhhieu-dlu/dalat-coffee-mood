@@ -1,5 +1,7 @@
-import InteractiveDalatMap from '@/components/map/InteractiveDalatMap'
 import { getCoffeeShops } from '@/actions/coffee-shops'
+import InteractiveDalatMapShell from '@/components/map/InteractiveDalatMapShell'
+
+export const dynamic = 'force-dynamic'
 
 export default async function MapPage() {
   const coffeeShops = await getCoffeeShops()
@@ -13,7 +15,7 @@ export default async function MapPage() {
         </p>
       </header>
 
-      <InteractiveDalatMap shops={coffeeShops} />
+      <InteractiveDalatMapShell shops={coffeeShops} />
 
       <section className="mt-6">
         <div className="mb-3 flex items-center justify-between">

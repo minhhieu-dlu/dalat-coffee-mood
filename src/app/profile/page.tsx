@@ -4,6 +4,8 @@ import { signOutAction } from '@/actions/auth'
 import { createClient } from '@/lib/supabase/server'
 import { getUserRole } from '@/lib/auth/role'
 
+export const dynamic = 'force-dynamic'
+
 function AvatarMark({ email }: { email: string }) {
   const initial = email.trim().charAt(0).toUpperCase() || '?'
 
@@ -21,42 +23,43 @@ async function handleSignOut() {
 }
 
 export default async function ProfilePage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  try {
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
-  if (!user) {
+    if (!user) {
+      return (
+        <main className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-3xl items-center px-4 pb-24 pt-4 sm:px-6 lg:px-8">
+          <section className="w-full rounded-4xl bg-white p-6 text-center shadow-[0_20px_50px_rgba(10,47,29,0.08)] ring-1 ring-black/5">
+            <p className="text-2xl font-bold tracking-tight text-slate-900">Bạn chưa đăng nhập</p>
+            <p className="mt-2 text-sm text-slate-600">Hãy đăng nhập để xem hồ sơ, quán yêu thích và cài đặt tài khoản.</p>
+            <Link
+              href="/login"
+              className="mt-6 inline-flex h-12 items-center justify-center rounded-2xl bg-pine-dark px-6 text-sm font-semibold text-white shadow-[0_16px_30px_rgba(10,47,29,0.18)]"
+            >
+              Đi tới trang đăng nhập
+            </Link>
+          </section>
+        </main>
+      )
+    }
+
+    const email = user.email ?? 'no-email@example.com'
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('name, role')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    const role = profile?.role === 'admin' ? 'admin' : getUserRole(user)
+    const userMetadata = user.user_metadata as { name?: unknown } | null | undefined
+    const metadataName = typeof userMetadata?.name === 'string' ? userMetadata.name : null
+    const displayName = profile?.name ?? metadataName ?? email.split('@')[0] ?? email
+
     return (
-      <main className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-3xl items-center px-4 pb-24 pt-4 sm:px-6 lg:px-8">
-        <section className="w-full rounded-4xl bg-white p-6 text-center shadow-[0_20px_50px_rgba(10,47,29,0.08)] ring-1 ring-black/5">
-          <p className="text-2xl font-bold tracking-tight text-slate-900">Bạn chưa đăng nhập</p>
-          <p className="mt-2 text-sm text-slate-600">Hãy đăng nhập để xem hồ sơ, quán yêu thích và cài đặt tài khoản.</p>
-          <Link
-            href="/login"
-            className="mt-6 inline-flex h-12 items-center justify-center rounded-2xl bg-pine-dark px-6 text-sm font-semibold text-white shadow-[0_16px_30px_rgba(10,47,29,0.18)]"
-          >
-            Đi tới trang đăng nhập
-          </Link>
-        </section>
-      </main>
-    )
-  }
-
-  const email = user.email ?? 'no-email@example.com'
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('name, role')
-    .eq('id', user.id)
-    .maybeSingle()
-
-  const role = profile?.role === 'admin' ? 'admin' : getUserRole(user)
-  const userMetadata = user.user_metadata as { name?: unknown } | null | undefined
-  const metadataName = typeof userMetadata?.name === 'string' ? userMetadata.name : null
-  const displayName = profile?.name ?? metadataName ?? email.split('@')[0] ?? email
-
-  return (
-    <main className="mx-auto w-full max-w-3xl px-4 pb-24 pt-4 sm:px-6 lg:px-8">
+      <main className="mx-auto w-full max-w-3xl px-4 pb-24 pt-4 sm:px-6 lg:px-8">
       <header className="mb-6">
         <h1 className="text-3xl font-bold tracking-tight text-slate-900">Cá nhân</h1>
         <p className="mt-2 text-sm text-slate-600">Quản lý hồ sơ và các thiết lập tài khoản của bạn.</p>
@@ -101,6 +104,18 @@ export default async function ProfilePage() {
           </button>
         </form>
       </section>
-    </main>
-  )
+      </main>
+    )
+  } catch (error) {
+    console.error('Profile page failed to load:', error)
+
+    return (
+      <main className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-3xl items-center px-4 pb-24 pt-4 sm:px-6 lg:px-8">
+        <section className="w-full rounded-4xl bg-white p-6 text-center shadow-[0_20px_50px_rgba(10,47,29,0.08)] ring-1 ring-black/5">
+          <p className="text-2xl font-bold tracking-tight text-slate-900">Không thể tải hồ sơ</p>
+          <p className="mt-2 text-sm text-slate-600">Kiểm tra lại biến môi trường Supabase trên Vercel.</p>
+        </section>
+      </main>
+    )
+  }
 }

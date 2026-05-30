@@ -18,9 +18,5 @@ export function getUserRole(user: UserLike): AppRole {
     return 'admin'
   }
 
-  if (isAdminEmail(user?.email)) {
-    return 'admin'
-  }
-
   return 'user'
 }

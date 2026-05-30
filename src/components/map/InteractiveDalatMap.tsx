@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
 import L from 'leaflet'
@@ -103,7 +104,9 @@ function MapCenterButton({ userLocation }: { userLocation: UserLocation | null }
 }
 
 export default function InteractiveDalatMap({ shops }: InteractiveDalatMapProps) {
+  const router = useRouter()
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null)
+  const [mapError, setMapError] = useState(false)
 
   useEffect(() => {
     if (!navigator.geolocation) {
@@ -133,71 +136,101 @@ export default function InteractiveDalatMap({ shops }: InteractiveDalatMapProps)
   const shopMarkers = shops.filter(
     (shop) => typeof shop.latitude === 'number' && typeof shop.longitude === 'number'
   )
+  const hasMarkers = shopMarkers.length > 0
 
   return (
     <div className="overflow-hidden rounded-4xl bg-white p-3 shadow-[0_20px_50px_rgba(10,47,29,0.08)] ring-1 ring-black/5">
-      <div className="relative h-130 overflow-hidden rounded-3xl">
-        <MapContainer center={dalatCenter} zoom={13} className="h-full w-full">
-          <FitBounds shops={shopMarkers} />
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
+      <div className="relative overflow-hidden rounded-3xl">
+        <div className="h-[420px] w-full">
+          {mapError ? (
+            <div className="flex h-full items-center justify-center text-center text-sm text-slate-600">
+              <div>
+                <p className="mb-2 font-semibold">Bản đồ hiện không sẵn sàng</p>
+                <p className="mb-3">Vui lòng thử tải lại trang hoặc kiểm tra kết nối mạng.</p>
+                <a
+                  className="inline-flex rounded-full bg-pine-dark px-4 py-2 text-sm font-semibold text-white"
+                  href="/map"
+                >
+                  Thử lại
+                </a>
+              </div>
+            </div>
+          ) : (
+            <div className="relative h-full w-full">
+              <MapContainer center={dalatCenter} zoom={13} className="h-full w-full">
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  eventHandlers={{
+                    tileerror: () => {
+                      setMapError(true)
+                    },
+                  }}
+                />
+                <FitBounds shops={shopMarkers} />
 
-          {shopMarkers.map((shop) => {
-            const distanceKm =
-              userLocation && typeof shop.latitude === 'number' && typeof shop.longitude === 'number'
-                ? haversineDistanceKm(
-                    userLocation.latitude,
-                    userLocation.longitude,
-                    shop.latitude,
-                    shop.longitude
-                  )
-                : null
+                {shopMarkers.map((shop) => {
+                  const distanceKm =
+                    userLocation && typeof shop.latitude === 'number' && typeof shop.longitude === 'number'
+                      ? haversineDistanceKm(
+                          userLocation.latitude,
+                          userLocation.longitude,
+                          shop.latitude,
+                          shop.longitude
+                        )
+                      : null
 
-            return (
-              <Marker
-                key={shop.id}
-                position={[shop.latitude as number, shop.longitude as number]}
-                icon={markerIcon}
-              >
-                <Popup>
-                  <div className="w-56 space-y-3">
-                    <div className="overflow-hidden rounded-2xl bg-slate-100">
-                      {shop.image_url ? (
-                        <img
-                          src={shop.image_url}
-                          alt={shop.name}
-                          className="h-28 w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-28 items-center justify-center text-sm text-slate-500">
-                          Không có ảnh
-                        </div>
-                      )}
-                    </div>
-
-                    <div>
-                      <p className="text-sm font-bold text-slate-900">{shop.name}</p>
-                      <p className="mt-1 text-xs leading-5 text-slate-600">
-                        {formatDistance(distanceKm)}
-                      </p>
-                    </div>
-
-                    <Link
-                      href={`/shops/${shop.id}`}
-                      className="inline-flex h-10 items-center justify-center rounded-full bg-pine-dark px-4 text-sm font-semibold text-white transition hover:bg-pine-dark/95"
+                  return (
+                    <Marker
+                      key={shop.id}
+                      position={[shop.latitude as number, shop.longitude as number]}
+                      icon={markerIcon}
+                      eventHandlers={{
+                        click: () => {
+                          router.push(`/shops/${shop.id}`)
+                        },
+                      }}
                     >
-                      Xem chi tiết quán
-                    </Link>
-                  </div>
-                </Popup>
-              </Marker>
-            )
-          })}
+                      <Popup>
+                        <div className="w-56 space-y-3">
+                          <div className="overflow-hidden rounded-2xl bg-slate-100">
+                            {shop.image_url ? (
+                              <img src={shop.image_url} alt={shop.name} className="h-28 w-full object-cover" />
+                            ) : (
+                              <div className="flex h-28 items-center justify-center text-sm text-slate-500">
+                                Không có ảnh
+                              </div>
+                            )}
+                          </div>
 
-          <MapCenterButton userLocation={userLocation} />
-        </MapContainer>
+                          <div>
+                            <p className="text-sm font-bold text-slate-900">{shop.name}</p>
+                            <p className="mt-1 text-xs leading-5 text-slate-600">{formatDistance(distanceKm)}</p>
+                          </div>
+
+                          <Link
+                            href={`/shops/${shop.id}`}
+                            className="inline-flex h-10 items-center justify-center rounded-full bg-pine-dark px-4 text-sm font-semibold text-white transition hover:bg-pine-dark/95"
+                          >
+                            Xem chi tiết quán
+                          </Link>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  )
+                })}
+
+                <MapCenterButton userLocation={userLocation} />
+              </MapContainer>
+
+              {!hasMarkers ? (
+                <div className="pointer-events-none absolute inset-x-4 bottom-4 rounded-3xl bg-white/90 px-4 py-3 text-sm font-medium text-slate-700 shadow-lg backdrop-blur-sm">
+                  Chưa có địa điểm nào có tọa độ hợp lệ để ghim lên bản đồ.
+                </div>
+              ) : null}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

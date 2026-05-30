@@ -1,4 +1,7 @@
+import { getCoffeeShopsWithStatus } from '@/actions/coffee-shops'
 import { getDalatWeather } from '@/actions/weather'
+
+export const dynamic = 'force-dynamic'
 
 const systemServices = [
   { name: 'Weather API', status: 'Hoạt động', tone: 'bg-emerald-500' },
@@ -12,7 +15,13 @@ const stats = [
 ] as const
 
 export default async function AdminDashboardPage() {
-  const weather = await getDalatWeather()
+  const weather = await getDalatWeather().catch(() => ({
+    temperature: null,
+    description: 'Không thể tải dữ liệu thời tiết',
+  }))
+  const { shops, message } = await getCoffeeShopsWithStatus()
+  const shopsWithLocation = shops.filter((shop) => typeof shop.latitude === 'number' && typeof shop.longitude === 'number')
+  const shopsWithImage = shops.filter((shop) => Boolean(shop.image_url))
 
   return (
     <main className="space-y-6">
@@ -45,6 +54,27 @@ export default async function AdminDashboardPage() {
           <div>
             <p className="text-base font-bold text-slate-900">{weather.description}</p>
             <p className="text-sm text-slate-600">Đà Lạt, Việt Nam</p>
+          </div>
+        </div>
+
+        {message ? (
+          <div className="mt-4 rounded-3xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+            {message}
+          </div>
+        ) : null}
+
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          <div className="rounded-3xl bg-white px-4 py-4 shadow-sm ring-1 ring-black/5">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Quán đã đọc được</p>
+            <p className="mt-2 text-2xl font-bold text-slate-900">{shops.length}</p>
+          </div>
+          <div className="rounded-3xl bg-white px-4 py-4 shadow-sm ring-1 ring-black/5">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Có tọa độ hợp lệ</p>
+            <p className="mt-2 text-2xl font-bold text-slate-900">{shopsWithLocation.length}</p>
+          </div>
+          <div className="rounded-3xl bg-white px-4 py-4 shadow-sm ring-1 ring-black/5">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Có ảnh hiển thị</p>
+            <p className="mt-2 text-2xl font-bold text-slate-900">{shopsWithImage.length}</p>
           </div>
         </div>
       </section>

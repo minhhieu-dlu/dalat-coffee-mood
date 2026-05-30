@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 
 import DistanceFromUser from '@/components/shop/DistanceFromUser'
 import { createClient } from '@/lib/supabase/server'
+import { getCoffeeShops } from '@/actions/coffee-shops'
 
 const fallbackShops = {
   'cheo-veooo': {
@@ -140,15 +141,37 @@ export default async function ShopDetailPage({
   const supabase = await createClient()
   const numericId = Number(id)
 
-  const { data: shopRow } = Number.isInteger(numericId)
-    ? await supabase
+  let shopRow: any = null
+
+  if (Number.isInteger(numericId)) {
+    try {
+      const res = await supabase
         .from('coffee_shops')
         .select('id, name, description, address, latitude, longitude, image_url, ai_mood_tags')
         .eq('id', numericId)
         .maybeSingle()
-    : { data: null }
 
-  const fallbackShop =
+      shopRow = res.data
+    } catch (err) {
+      const msg = String((err as any)?.message ?? err)
+
+      if (/column .*latitude.* does not exist|column .*longitude.* does not exist|does not exist/.test(msg)) {
+        // Retry without latitude/longitude
+        const res2 = await supabase
+          .from('coffee_shops')
+          .select('id, name, description, address, image_url, ai_mood_tags')
+          .eq('id', numericId)
+          .maybeSingle()
+
+        shopRow = res2.data
+      } else {
+        console.error('shop detail query error:', err)
+        shopRow = null
+      }
+    }
+  }
+
+  let fallbackShop: { name: string; description: string; address: string; latitude?: number | null; longitude?: number | null; imageUrl?: string } | null =
     fallbackShops[decodeURIComponent(id) as keyof typeof fallbackShops] ??
     (shopRow
       ? {
@@ -161,9 +184,31 @@ export default async function ShopDetailPage({
         }
       : null)
 
+  // If no fallback found by slug, and the id is numeric, try to find the fallback by numeric id
+  if (!fallbackShop && Number.isInteger(numericId)) {
+    const allShops = await getCoffeeShops()
+    const found = allShops.find((s) => s.id === numericId)
+
+    if (found) {
+      // map CoffeeShopRow shape to fallback shape
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { id: _id, ai_mood_tags, image_url, ...rest } = found as any
+      fallbackShop = {
+        name: found.name,
+        description: found.description ?? '',
+        address: found.address ?? '',
+        latitude: found.latitude,
+        longitude: found.longitude,
+        imageUrl: found.image_url ?? '',
+      }
+    }
+  }
+
   if (!fallbackShop) {
     notFound()
   }
+
+  const currentShopSlug = decodeURIComponent(id)
 
   const shop = {
     ...fallbackShop,
@@ -176,16 +221,50 @@ export default async function ShopDetailPage({
     tags: (shopRow?.ai_mood_tags ?? []) as string[],
   }
 
-  const { count: likesCount } = await supabase
-    .from('reviews')
-    .select('id', { count: 'exact', head: true })
-    .eq('shop_id', shopRow?.id ?? numericId ?? 0)
+  const hasCoordinates = typeof shop.latitude === 'number' && typeof shop.longitude === 'number'
+  const moodCount = shop.tags.length
+
+  let likesCount = 0
+
+  // Only query reviews when we have a valid numeric id from the database
+  if (typeof shopRow?.id === 'number' && Number.isInteger(shopRow.id)) {
+    const { count } = await supabase
+      .from('reviews')
+      .select('id', { count: 'exact', head: true })
+      .eq('shop_id', shopRow.id)
+
+    likesCount = count ?? 0
+  } else if (Number.isInteger(numericId)) {
+    const { count } = await supabase
+      .from('reviews')
+      .select('id', { count: 'exact', head: true })
+      .eq('shop_id', numericId)
+
+    likesCount = count ?? 0
+  } else {
+    likesCount = 0
+  }
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-col px-4 pb-40 pt-4 sm:px-6 lg:px-8">
-      <section className="relative overflow-hidden rounded-4xl shadow-[0_24px_60px_rgba(10,47,29,0.18)]">
+    <main className="mx-auto flex w-full max-w-5xl flex-col px-4 pb-32 pt-4 sm:px-6 lg:px-8">
+      <section className="relative overflow-hidden rounded-[2rem] shadow-[0_24px_60px_rgba(10,47,29,0.18)] sm:rounded-4xl">
+        <div className="absolute left-4 top-4 z-20 flex flex-col gap-2 sm:flex-row">
+          <Link
+            href="/map"
+            className="inline-flex h-11 items-center justify-center rounded-full bg-white/90 px-4 text-sm font-semibold text-pine-dark shadow-lg backdrop-blur-md transition hover:bg-white"
+          >
+            Quay lại bản đồ
+          </Link>
+          <Link
+            href={`/shops/${currentShopSlug}`}
+            className="inline-flex h-11 items-center justify-center rounded-full bg-pine-dark/90 px-4 text-sm font-semibold text-white shadow-lg backdrop-blur-md transition hover:bg-pine-dark"
+          >
+            Đường dẫn chi tiết
+          </Link>
+        </div>
+
         <div
-          className="h-128 bg-cover bg-center"
+          className="h-[26rem] bg-cover bg-center sm:h-128"
           style={{
             backgroundImage: `url(${shop.imageUrl})`,
           }}
@@ -210,46 +289,69 @@ export default async function ShopDetailPage({
           </button>
         </div>
 
-        <div className="absolute inset-x-0 bottom-0 p-4">
-          <div className="rounded-3xl border border-white/15 bg-black/35 p-4 text-white backdrop-blur-md">
-            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/70">
+        <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
+          <div className="rounded-[1.75rem] border border-white/15 bg-black/38 p-4 text-white backdrop-blur-md sm:rounded-3xl sm:p-5">
+            <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70 sm:text-xs">
               <span className="rounded-full bg-white/15 px-2.5 py-1">Quán nổi bật</span>
               <span className="rounded-full bg-white/15 px-2.5 py-1">Menu theo mood</span>
-              {shop.tags.map((tag) => (
+              {shop.tags.slice(0, 3).map((tag) => (
                 <span key={tag} className="rounded-full bg-white/15 px-2.5 py-1 normal-case tracking-normal">
                   {tag}
                 </span>
               ))}
             </div>
-            <h1 className="mt-3 text-2xl font-bold tracking-tight">{shop.name}</h1>
-            <p className="mt-1 text-sm text-white/80">{shop.address}</p>
+            <h1 className="mt-3 text-2xl font-bold tracking-tight sm:text-3xl">{shop.name}</h1>
+            <p className="mt-1 text-sm leading-6 text-white/80 sm:text-base">{shop.address}</p>
+
+            <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
+              <div className="rounded-2xl bg-white/10 px-3 py-2 backdrop-blur-sm">
+                <p className="text-[11px] uppercase tracking-[0.16em] text-white/60">Likes</p>
+                <p className="mt-1 text-sm font-semibold text-white sm:text-base">{likesCount ?? 0}</p>
+              </div>
+              <div className="rounded-2xl bg-white/10 px-3 py-2 backdrop-blur-sm">
+                <p className="text-[11px] uppercase tracking-[0.16em] text-white/60">Mood</p>
+                <p className="mt-1 text-sm font-semibold text-white sm:text-base">{moodCount}</p>
+              </div>
+              <div className="rounded-2xl bg-white/10 px-3 py-2 backdrop-blur-sm">
+                <p className="text-[11px] uppercase tracking-[0.16em] text-white/60">Tọa độ</p>
+                <p className="mt-1 text-sm font-semibold text-white sm:text-base">{hasCoordinates ? 'Có' : 'Chưa'}</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="mt-5 grid gap-4 md:grid-cols-3">
-        <article className="rounded-3xl bg-white p-5 shadow-[0_20px_50px_rgba(10,47,29,0.08)] ring-1 ring-black/5 md:col-span-2">
-          <div className="flex items-start justify-between gap-4">
+      <section className="mt-5 grid gap-4 lg:grid-cols-3">
+        <article className="rounded-[1.75rem] bg-white p-5 shadow-[0_20px_50px_rgba(10,47,29,0.08)] ring-1 ring-black/5 lg:col-span-2 sm:rounded-3xl sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h2 className="text-lg font-bold tracking-tight text-slate-900">Mô tả</h2>
-              <p className="mt-2 text-sm leading-7 text-slate-700">{shop.description}</p>
+              <p className="mt-2 text-sm leading-7 text-slate-700 sm:text-[15px]">{shop.description}</p>
             </div>
 
-            <div className="rounded-3xl bg-pine-light px-4 py-3 text-center shadow-sm">
+            <div className="rounded-3xl bg-pine-light px-4 py-3 text-center shadow-sm sm:min-w-28">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Likes</p>
               <p className="mt-1 text-2xl font-bold text-slate-900">{likesCount ?? 0}</p>
             </div>
           </div>
 
-          <div className="mt-5 rounded-3xl bg-[linear-gradient(135deg,rgba(15,23,42,0.04),rgba(10,47,29,0.04))] p-4 text-sm font-medium text-slate-700 ring-1 ring-black/5">
-            <span className="font-semibold text-slate-900">Cách bạn </span>
-            <DistanceFromUser latitude={shop.latitude} longitude={shop.longitude} />
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-3xl bg-[linear-gradient(135deg,rgba(15,23,42,0.04),rgba(10,47,29,0.04))] p-4 text-sm font-medium text-slate-700 ring-1 ring-black/5">
+              <span className="font-semibold text-slate-900">Cách bạn </span>
+              <DistanceFromUser latitude={shop.latitude} longitude={shop.longitude} />
+            </div>
+            <div className="rounded-3xl bg-[linear-gradient(135deg,rgba(15,23,42,0.04),rgba(10,47,29,0.04))] p-4 text-sm text-slate-700 ring-1 ring-black/5">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Gợi ý trải nghiệm</p>
+              <p className="mt-2 leading-6">
+                Phù hợp để ngồi lâu, chụp ảnh và trò chuyện chậm rãi theo đúng nhịp Đà Lạt.
+              </p>
+            </div>
           </div>
         </article>
 
-        <aside className="rounded-3xl bg-pine-light p-5 shadow-[0_20px_50px_rgba(10,47,29,0.08)] ring-1 ring-white/60">
+        <aside className="rounded-[1.75rem] bg-pine-light p-5 shadow-[0_20px_50px_rgba(10,47,29,0.08)] ring-1 ring-white/60 sm:rounded-3xl sm:p-6">
           <h2 className="text-lg font-bold tracking-tight text-slate-900">Thông tin nhanh</h2>
-          <div className="mt-4 space-y-3 text-sm text-slate-700">
+          <div className="mt-4 grid gap-3 text-sm text-slate-700">
             <div className="rounded-2xl bg-white/80 px-4 py-3 shadow-sm">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Địa chỉ</p>
               <p className="mt-1 leading-6">{shop.address}</p>
@@ -263,36 +365,56 @@ export default async function ShopDetailPage({
               </p>
             </div>
             <div className="rounded-2xl bg-white/80 px-4 py-3 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Tình trạng</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Mood tags</p>
+                <p className="mt-1 leading-6">
+                  {shop.tags.length > 0 ? shop.tags.join(' · ') : 'Chưa có mood tags'}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-white/80 px-4 py-3 shadow-sm">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Tình trạng</p>
               <p className="mt-1 leading-6">Phù hợp để thư giãn, chụp ảnh và ngồi lâu.</p>
             </div>
           </div>
         </aside>
       </section>
 
-      <section className="mt-6 space-y-4">
-        <div className="flex items-end justify-between gap-3">
+        <section className="mt-6 space-y-4">
+          <div className="flex items-end justify-between gap-3">
           <div>
             <h2 className="text-lg font-bold tracking-tight text-slate-900">Khu vực Menu</h2>
             <p className="text-sm text-slate-600">Những món uống gợi ý hợp với không gian Đà Lạt.</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {menuItems.map((item) => (
             <MenuCard key={item.name} {...item} />
           ))}
         </div>
       </section>
 
-      <section className="mt-6 rounded-3xl bg-white p-5 shadow-[0_18px_40px_rgba(10,47,29,0.08)] ring-1 ring-black/5">
-        <div className="flex items-center gap-3 text-sm font-semibold text-slate-700">
+        <section className="mt-6 rounded-[1.75rem] bg-white p-5 shadow-[0_18px_40px_rgba(10,47,29,0.08)] ring-1 ring-black/5 sm:rounded-3xl sm:p-6">
+          <div className="flex items-center gap-3 text-sm font-semibold text-slate-700">
           <CompassIcon />
           <span>Cần chỉ đường nhanh?</span>
         </div>
         <p className="mt-2 text-sm leading-7 text-slate-600">
           Bật định vị trên thiết bị để xem khoảng cách đường chim bay từ vị trí của bạn đến quán.
         </p>
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+            <Link
+              href="/map"
+              className="inline-flex h-11 items-center justify-center rounded-full bg-pine-dark px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-pine-dark/90"
+            >
+              Xem trên bản đồ
+            </Link>
+            <Link
+              href="/"
+              className="inline-flex h-11 items-center justify-center rounded-full bg-pine-light px-4 text-sm font-semibold text-pine-dark shadow-sm transition hover:bg-pine-light/80"
+            >
+              Khám phá thêm quán khác
+            </Link>
+          </div>
       </section>
     </main>
   )
