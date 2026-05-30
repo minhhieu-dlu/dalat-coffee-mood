@@ -7,7 +7,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 FROM base AS dependencies
 
 COPY package*.json ./
-RUN npm ci --no-audit --no-fund
+# Use npm install to avoid lockfile mismatch during image builds in CI/local
+RUN npm install --no-audit --no-fund
 
 FROM base AS builder
 
